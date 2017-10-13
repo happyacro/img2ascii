@@ -1,3 +1,41 @@
+<!--
+
+This program was written for a book by Jason Baker called HAPPY:/ACRO.
+
+There is a delightful retro 1996 style website that was made in 2017 to 
+promote the book: http://www.happyacro.com.
+
+Documentation for this program is available here: 
+
+https://github.com/happyacro/img2ascii
+
+Copyright [c) 2017, Coder Cowboy, LLC. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+* 1. Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+* 2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+  
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+[INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+[INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied.
+
+-->
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
@@ -9,6 +47,7 @@
 			.form-group { float:left; clear:left; margin-bottom:10px; }
 			.form-group-row { float:left; clear:both; }
 			A, A:hover { text-decoration:none; color:blue; }
+			CANVAS { margin-left:auto; margin-right:auto; }			
 		</style>
 	</head>
 	<body>
@@ -76,7 +115,13 @@
 			<div style="clear:both; height:40px;"></div>
 		</div>
 
-		<canvas id="myCanvas" width="0" height="0" style="border:1px solid #d3d3d3;"></canvas>
+		<h5 style="text-align:center; width:100%">
+			(This works in chrome. Download image by right clicking and select <i>save image</i>.)
+		</h5>
+
+		<div style="width:100%; text-align:center; margin-bottom:20px;">
+			<canvas id="myCanvas" width="0" height="0" style="border:1px solid #d3d3d3;"></canvas>
+		</div>
 
 		<script>	
 
