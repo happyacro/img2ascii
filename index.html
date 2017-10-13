@@ -1,144 +1,230 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-	<title>img2ascii</title>
-</head>
-<body>
+	<head>
+		<title>img2ascii</title>
+		<style>
+			INPUT { width:200px; float:left; }
+			INPUT[type="checkbox"] { margin-left:-2px; }
+			LABEL { width:130px; margin-right:10px; display:block; float:left; }
+			.form-group { float:left; clear:left; margin-bottom:10px; }
+			.form-group-row { float:left; clear:both; }
+			A, A:hover { text-decoration:none; color:blue; }
+		</style>
+	</head>
+	<body>
 
-<input type="file" id="file_input">	
-<a onclick="downloadImage(this)">download</a>
-<canvas id="myCanvas" width="300" height="300" style="border:1px solid #d3d3d3;"></canvas>
-<input type="button" id="randomizeButton">
-<input type="range" min="1" max="5" value="2" class="slider" id="myRange">
+		<h1 style="text-align:center; width:100%">img2ascii</h1>
+		<div style="margin-right:auto; margin-left:auto; width:500px; margin-top:20px; margin-bottom:20px;">
+			<div class="form-group-row ">
+				<div class="form-group">
+					<label>Image File:</label>
+					<input type="file" id="imageFileInput">	
+				</div>
+				<div class="form-group">
+					<label>Black Background:</label>
+					<input type="checkbox" id="blackBackground">	
+				</div>
+			</div>
+			<div class="form-group-row ">
+				<div class="form-group">
+					<label>Font:</label>
+					<select id="fontDropDown">
+						<option value="Arial, sans-serif">Arial</option>
+						<option value="\"Arial Black\", Gadget, sans-serif">Arial Black</option>
+						<option value="\"Comic Sans MS\", cursive, sans-serif">Comic Sans (Please don't.)</option>
+						<option value="\"Courier New\", Courier, monospace">Courier New</option>
+						<option value="Georgia, serif">Georgia</option>
+						<option value="Helvetica, sans-serif" selected>Helvetica</option>
+						<option value="Impact, Charcoal, sans-serif">Impact (meme font)</option>
+						<option value="\"Lucida Sans Unicode\", \"Lucida Grande\", sans-serif">Lucida</option>
+						<option value="\"Lucida Console\", Monaco, monospace">Lucida Console</option>
+						<option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+						<option value="\"Times New Roman\", Times, serif">Times New Roman</option>
+						<option value="Verdana, Geneva, sans-serif">Verdana</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Font Size:</label>
+					<input type="range" min="1" max="200" value="10" class="slider" id="fontSizeSlider">
+					<label id="fontSizeValue">12</label>
+				</div>					
+			</div>
+			<div class="form-group-row">
+				<div class="form-group">
+					<label>Resize Factor:</label>
+					<input type="range" min="0" max="4" value="0" class="slider" id="resizeFactorSlider">
+					<label id="resizeFactorValue">1</label>
+				</div>
+				<div class="form-group">
+					<label>Box Size:</label>
+					<input type="range" min="1" max="200" value="10" class="slider" id="boxSizeSlider">
+					<label id="boxSizeValue">12</label>
+				</div>	
+			</div>
+			<div class="form-group-row">
+				<div class="form-group" style="text-align:center;">
+					<label>&nbsp;</label>
+					<input type="button" id="randomizeButton" value="Generate">
+				</div>
+			</div>
+			<div class="form-group-row">
+				<div class="form-group" style="text-align:center;">
+					<label>&nbsp;</label>
+					<a href="https://github.com/happyacro/img2ascii">Wait, what?</a>
+				</div>
+			</div>
+			<div style="clear:both; height:40px;"></div>
+		</div>
 
+		<canvas id="myCanvas" width="0" height="0" style="border:1px solid #d3d3d3;"></canvas>
 
-<script>
+		<script>	
 
-	el("myRange").oninput = function() {
-		console.log(this.value);	
-	}
+			function el(id) { return document.getElementById(id); }
 
-	function el(id) { return document.getElementById(id); }
+			var canvas = el("myCanvas");
+			var ctx = canvas.getContext("2d");
+			var lastImage = null;
+			var allowableCharacters = "abcdefghijklmnopqrstuvwxyz";
+			allowableCharacters += "ABCDEFGHIJKLMNOPQRSTUVWYXZ";
+			allowableCharacters += "0123456789";
+			allowableCharacters += "!@#$%^&*()<>?\"\\|{}[]~:;/";
 
-	function createColor(r, g, b) { return { "r": r, "g": g, "b": b }; }
+			function createColor(r, g, b) { return { "r": r, "g": g, "b": b }; }
 
-	function parseColorFromHex(hexString) {
-		if (hexString.charAt(0) == '#') {
-			hexString = hexString.substring(1);
-		}
-		var red = parseInt("0x" + hexString.substring(0, 2));
-		var green = parseInt("0x" + hexString.substring(2, 4));
-		var blue = parseInt("0x" + hexString.substring(4, 6));
-		return createColor(red, green, blue);
-	}
-
-	function averageColors(colors) {
-		var red = 0;
-		var green = 0;
-		var blue = 0;
-		for (var i = 0; i < colors.length; i++) {
-			red += colors[i].r;
-			green += colors[i].g;
-			blue += colors[i].b;
-		}
-		red /= colors.length;
-		green /= colors.length;
-		blue /= colors.length;
-		red = Math.floor(red);
-		green = Math.floor(green);
-		blue = Math.floor(blue);
-		return createColor(red, green, blue);
-	}
-
-	var c = el("myCanvas");
-	var ctx = c.getContext("2d");
-	var lastImage = null;
-	
-	function copyImage(img) {
-		lastImage = img;
-		var resizeMultiplier = 1;
-		c.width = img.width * resizeMultiplier;
-		c.height = img.height * resizeMultiplier;
-		ctx.drawImage(img, 0, 0, c.width, c.height);
-		var pixelCount = 0;
-		var imgData = ctx.getImageData(0, 0, c.width, c.height);
-
-		var boxSize = 8;
-		var boxesWide = (c.width / boxSize) + 1;
-		var boxesHigh = (c.height / boxSize) + 1;
-
-		//black out canvas
-		ctx.rgbCode = "#000000";
-		ctx.fillRect(0, 0, c.width, c.height);
-		ctx.font = boxSize + "px Arial";
-		//ctx.fillText("width:" + ctx.measureText(txt).width,10,50)
-
-		var allowableCharacters = "abcdefghijklmnopqrstuvwxyz";
-		allowableCharacters += "ABCDEFGHIJKLMNOPQRSTUVWYXZ";
-		allowableCharacters += "0123456789";
-		allowableCharacters += "!@#$%^&*()<>?\"\\|{}[]~:;/";
-
-		for (var boxY = 0; boxY < boxesHigh; boxY++) {
-			for (var boxX = 0; boxX < boxesWide; boxX++) {
-				var lineColors = [];
-				for (var x = 0; x < boxSize; x++) {
-					var realX = x + (boxX * boxSize);
-					for (var y = 0; y < boxSize; y++) {						
-						var realY = y + (boxY * boxSize);
-						var i = (realX + (realY * c.width)) * 4;
-						var red = imgData.data[i];
-						var green = imgData.data[i+1];
-						var blue = imgData.data[i+2];
-						var alpha = imgData.data[i+3];
-						lineColors.push(createColor(red, green, blue));
-					}
+			function parseColorFromHex(hexString) {
+				if (hexString.charAt(0) == '#') {
+					hexString = hexString.substring(1);
 				}
-				var averageColor = averageColors(lineColors);
-				var backgroundColor = new Object();
-				backgroundColor.r = Math.max(averageColor.r - 100, 0);
-				backgroundColor.g = Math.max(averageColor.g - 100, 0);
-				backgroundColor.b = Math.max(averageColor.b - 100, 0);
-				var rgbCode = "rgba(" + backgroundColor.r + ", " + backgroundColor.g  + ", " + backgroundColor.b + "," + 1.0 + ")";
-				ctx.fillStyle = rgbCode;
-				ctx.fillRect(boxX * boxSize, boxY * boxSize, boxSize, boxSize);	
-
-				var rgbCode = "rgba(" + averageColor.r + ", " + averageColor.g  + ", " + averageColor.b + "," + 1.0 + ")";
-				ctx.fillStyle = rgbCode;
-
-				var letterIndex = Math.floor((Math.random() * allowableCharacters.length));
-				var txt = allowableCharacters.charAt(letterIndex);
-				ctx.fillText(txt, boxX * boxSize, boxY * boxSize);
+				var red = parseInt("0x" + hexString.substring(0, 2));
+				var green = parseInt("0x" + hexString.substring(2, 4));
+				var blue = parseInt("0x" + hexString.substring(4, 6));
+				return createColor(red, green, blue);
 			}
-		}			
-	}	
 
-	el("file_input").onchange = function(e) {
-		var filesSelected = document.getElementById("file_input").files;
-	    if (filesSelected.length > 0) {
-	        var fileToLoad = filesSelected[0];
-	        if (fileToLoad.type.match("image.*")) {
-	            var fileReader = new FileReader();
-	            fileReader.onload = function(fileLoadedEvent) {
-	            	var img = new Image();
-			        img.onload = function() {
-			        	copyImage(img);
+			function averageColors(colors) {
+				var red = 0;
+				var green = 0;
+				var blue = 0;
+				for (var i = 0; i < colors.length; i++) {
+					red += colors[i].r;
+					green += colors[i].g;
+					blue += colors[i].b;
+				}
+				red /= colors.length;
+				green /= colors.length;
+				blue /= colors.length;
+				red = Math.floor(red);
+				green = Math.floor(green);
+				blue = Math.floor(blue);
+				return createColor(red, green, blue);
+			}
+			
+			function convertImageToAscii(img) {
+				if (img == null) {
+					alert("Upload an image.")
+					return;
+				}
+				lastImage = img;
+				var resizeMultiplier = getResizeFactor();
+				canvas.width = img.width * resizeMultiplier;
+				canvas.height = img.height * resizeMultiplier;
+				ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+						
+				var boxSize = el("boxSizeSlider").value;
+				var boxesWide = (canvas.width / boxSize) + 1;
+				var boxesHigh = (canvas.height / boxSize) + 1;
+				
+				ctx.font = el("fontSizeSlider").value + "px " + el("fontDropDown").value;		
+
+				var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+				var useBlackBackgroundColor = el("blackBackground").checked;
+				if (useBlackBackgroundColor) {
+					ctx.rgbCode = "#000000";
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+				}
+
+				for (var boxY = 0; boxY < boxesHigh; boxY++) {
+					for (var boxX = 0; boxX < boxesWide; boxX++) {
+						var lineColors = [];
+						for (var x = 0; x < boxSize; x++) {
+							var realX = x + (boxX * boxSize);
+							for (var y = 0; y < boxSize; y++) {						
+								var realY = y + (boxY * boxSize);
+								var i = (realX + (realY * canvas.width)) * 4;
+								if (i > imgData.length) {
+									continue;
+								}
+								var red = imgData.data[i];
+								var green = imgData.data[i+1];
+								var blue = imgData.data[i+2];
+								var alpha = imgData.data[i+3];
+								lineColors.push(createColor(red, green, blue));
+							}
+						}
+						var averageColor = averageColors(lineColors);
+						if (!useBlackBackgroundColor) {
+							var backgroundColor = new Object();
+							backgroundColor.r = Math.max(averageColor.r - 100, 0);
+							backgroundColor.g = Math.max(averageColor.g - 100, 0);
+							backgroundColor.b = Math.max(averageColor.b - 100, 0);
+							var rgbCode = "rgba(" + backgroundColor.r + ", " + backgroundColor.g  + ", " + backgroundColor.b + "," + 1.0 + ")";
+							ctx.fillStyle = rgbCode;
+							ctx.fillRect(boxX * boxSize, boxY * boxSize, boxSize, boxSize);		
+						}				
+
+						var rgbCode = "rgba(" + averageColor.r + ", " + averageColor.g  + ", " + averageColor.b + "," + 1.0 + ")";
+						ctx.fillStyle = rgbCode;
+
+						var letterIndex = Math.floor((Math.random() * allowableCharacters.length));
+						var txt = allowableCharacters.charAt(letterIndex);
+						ctx.fillText(txt, boxX * boxSize, boxY * boxSize);
+					}
+				}			
+			}	
+
+			function getResizeFactor() {
+				var value = el("resizeFactorSlider").value;
+				if (value == 0) {
+					return 1;
+				}
+				return Math.pow(2, value);
+			}
+
+			el("resizeFactorSlider").oninput = function() {
+				el("resizeFactorValue").innerHTML = getResizeFactor();
+			}
+
+			el("fontSizeSlider").oninput = function() {
+				el("fontSizeValue").innerHTML = el("fontSizeSlider").value;
+			}
+
+			el("boxSizeSlider").oninput = function() {
+				el("boxSizeValue").innerHTML = el("boxSizeSlider").value;
+			}
+
+			el("imageFileInput").onchange = function(e) {
+				var filesSelected = this.files;
+			    if (filesSelected.length > 0) {
+			        var fileToLoad = filesSelected[0];
+			        if (fileToLoad.type.match("image.*")) {
+			            var fileReader = new FileReader();
+			            fileReader.onload = function(fileLoadedEvent) {
+			            	var img = new Image();
+					        img.onload = function() {
+					        	convertImageToAscii(img);
+					        }
+					        img.src = fileLoadedEvent.target.result;			     	
+			            };
+			            fileReader.readAsDataURL(fileToLoad);
 			        }
-			        img.src = fileLoadedEvent.target.result;			     	
-	            };
-	            fileReader.readAsDataURL(fileToLoad);
-	        }
-	    }	    
-	};	
+			    }	    
+			};	
 
-	el("randomizeButton").onclick = function(e) {
-		copyImage(lastImage);
-	};
-
-	function downloadImage(link) {
-    	link.href = c.toDataURL();
-    	link.download = "img2ascci.png";
-	}  
-	
-	</script>
+			el("randomizeButton").onclick = function(e) {
+				convertImageToAscii(lastImage);
+			};
+		</script>
 </body>
 </html>
