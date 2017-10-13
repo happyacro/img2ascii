@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>img2ascii</title>
+</head>
+<body>
+
+<input type="file" id="file_input">	
+<a onclick="downloadImage(this)">download</a>
+<canvas id="myCanvas" width="300" height="300" style="border:1px solid #d3d3d3;"></canvas>
+<input type="button" id="randomizeButton">
+<input type="range" min="1" max="5" value="2" class="slider" id="myRange">
+
+
+<script>
+
+	el("myRange").oninput = function() {
+		console.log(this.value);	
+	}
+
+	function el(id) { return document.getElementById(id); }
+
+	function createColor(r, g, b) { return { "r": r, "g": g, "b": b }; }
+
+	function parseColorFromHex(hexString) {
+		if (hexString.charAt(0) == '#') {
+			hexString = hexString.substring(1);
+		}
+		var red = parseInt("0x" + hexString.substring(0, 2));
+		var green = parseInt("0x" + hexString.substring(2, 4));
+		var blue = parseInt("0x" + hexString.substring(4, 6));
+		return createColor(red, green, blue);
+	}
+
+	function averageColors(colors) {
+		var red = 0;
+		var green = 0;
+		var blue = 0;
+		for (var i = 0; i < colors.length; i++) {
+			red += colors[i].r;
+			green += colors[i].g;
+			blue += colors[i].b;
+		}
+		red /= colors.length;
+		green /= colors.length;
+		blue /= colors.length;
+		red = Math.floor(red);
+		green = Math.floor(green);
+		blue = Math.floor(blue);
+		return createColor(red, green, blue);
+	}
+
+	var c = el("myCanvas");
+	var ctx = c.getContext("2d");
+	var lastImage = null;
+	
+	function copyImage(img) {
+		lastImage = img;
+		var resizeMultiplier = 1;
+		c.width = img.width * resizeMultiplier;
+		c.height = img.height * resizeMultiplier;
+		ctx.drawImage(img, 0, 0, c.width, c.height);
+		var pixelCount = 0;
+		var imgData = ctx.getImageData(0, 0, c.width, c.height);
+
+		var boxSize = 8;
+		var boxesWide = (c.width / boxSize) + 1;
+		var boxesHigh = (c.height / boxSize) + 1;
+
+		//black out canvas
+		ctx.rgbCode = "#000000";
+		ctx.fillRect(0, 0, c.width, c.height);
+		ctx.font = boxSize + "px Arial";
+		//ctx.fillText("width:" + ctx.measureText(txt).width,10,50)
+
+		var allowableCharacters = "abcdefghijklmnopqrstuvwxyz";
+		allowableCharacters += "ABCDEFGHIJKLMNOPQRSTUVWYXZ";
+		allowableCharacters += "0123456789";
+		allowableCharacters += "!@#$%^&*()<>?\"\\|{}[]~:;/";
+
+		for (var boxY = 0; boxY < boxesHigh; boxY++) {
+			for (var boxX = 0; boxX < boxesWide; boxX++) {
+				var lineColors = [];
+				for (var x = 0; x < boxSize; x++) {
+					var realX = x + (boxX * boxSize);
+					for (var y = 0; y < boxSize; y++) {						
+						var realY = y + (boxY * boxSize);
+						var i = (realX + (realY * c.width)) * 4;
+						var red = imgData.data[i];
+						var green = imgData.data[i+1];
+						var blue = imgData.data[i+2];
+						var alpha = imgData.data[i+3];
+						lineColors.push(createColor(red, green, blue));
+					}
+				}
+				var averageColor = averageColors(lineColors);
+				var backgroundColor = new Object();
+				backgroundColor.r = Math.max(averageColor.r - 100, 0);
+				backgroundColor.g = Math.max(averageColor.g - 100, 0);
+				backgroundColor.b = Math.max(averageColor.b - 100, 0);
+				var rgbCode = "rgba(" + backgroundColor.r + ", " + backgroundColor.g  + ", " + backgroundColor.b + "," + 1.0 + ")";
+				ctx.fillStyle = rgbCode;
+				ctx.fillRect(boxX * boxSize, boxY * boxSize, boxSize, boxSize);	
+
+				var rgbCode = "rgba(" + averageColor.r + ", " + averageColor.g  + ", " + averageColor.b + "," + 1.0 + ")";
+				ctx.fillStyle = rgbCode;
+
+				var letterIndex = Math.floor((Math.random() * allowableCharacters.length));
+				var txt = allowableCharacters.charAt(letterIndex);
+				ctx.fillText(txt, boxX * boxSize, boxY * boxSize);
+			}
+		}			
+	}	
+
+	el("file_input").onchange = function(e) {
+		var filesSelected = document.getElementById("file_input").files;
+	    if (filesSelected.length > 0) {
+	        var fileToLoad = filesSelected[0];
+	        if (fileToLoad.type.match("image.*")) {
+	            var fileReader = new FileReader();
+	            fileReader.onload = function(fileLoadedEvent) {
+	            	var img = new Image();
+			        img.onload = function() {
+			        	copyImage(img);
+			        }
+			        img.src = fileLoadedEvent.target.result;			     	
+	            };
+	            fileReader.readAsDataURL(fileToLoad);
+	        }
+	    }	    
+	};	
+
+	el("randomizeButton").onclick = function(e) {
+		copyImage(lastImage);
+	};
+
+	function downloadImage(link) {
+    	link.href = c.toDataURL();
+    	link.download = "img2ascci.png";
+	}  
+	
+	</script>
+</body>
+</html>
